@@ -1,0 +1,137 @@
+# Defines four input number entities that allow adjusting the hot and cold tolerance
+# values for two different thermostats. These tolerance values are used to calculate
+# the "adjusted temperature" sensors that take into account the thermostat's
+# temperature and the configured tolerance.
+#
+# The input numbers have the following properties:
+# - `hot_tolerance_01`: Adjusts the hot tolerance for thermostat 01
+# - `cold_tolerance_01`: Adjusts the cold tolerance for thermostat 01
+# - `hot_tolerance_02`: Adjusts the hot tolerance for thermostat 02
+# - `cold_tolerance_02`: Adjusts the cold tolerance for thermostat 02
+# - `initial`: The default value for the tolerance, set to 3.0
+# - `min`: The minimum allowed value for the tolerance, set to 0.1
+# - `max`: The maximum allowed value for the tolerance, set to 5.0
+# - `step`: The increment/decrement step size, set to 0.1
+# - `mode`: The input mode, set to "box" for a numeric input box
+input_number:
+  hot_tolerance_01:
+    name: Hot Tolerance Element 01
+    initial: 3
+    min: 0.1
+    max: 5.0
+    step: 0.1
+    mode: box
+
+  cold_tolerance_01:
+    name: Cold Tolerance Element 01
+    initial: 3
+    min: 0.1
+    max: 5.0
+    step: 0.1
+    mode: box
+
+  hot_tolerance_02:
+    name: Hot Tolerance Element 02
+    initial: 3
+    min: 0.1
+    max: 5.0
+    step: 0.1
+    mode: box
+
+  cold_tolerance_02:
+    name: Cold Tolerance Element 02
+    initial: 3
+    min: 0.1
+    max: 5.0
+    step: 0.1
+    mode: box
+
+# This code defines a set of template sensors that calculate "adjusted temperature" values for two thermostats.
+# The adjusted temperature values take into account the current temperature reported by the thermostat and the configured
+# hot and cold tolerance values for each thermostat.
+# The tolerance values are retrieved from input number entities and used in the template calculations.
+# The resulting adjusted temperature sensors provide a more nuanced view of the actual temperature conditions
+# being maintained by the thermostats, accounting for the configured tolerance thresholds.
+sensor:
+  - platform: template
+    sensors:
+      dynamic_hot_tolerance_01:
+        unique_id: dynamic_hot_tolerance_01
+        value_template: "{{ states('input_number.hot_tolerance_01') | float }}"
+
+      dynamic_cold_tolerance_01:
+        unique_id: dynamic_cold_tolerance_01
+        value_template: "{{ states('input_number.cold_tolerance_01') | float }}"
+
+      dynamic_hot_tolerance_02:
+        unique_id: dynamic_hot_tolerance_02
+        value_template: "{{ states('input_number.hot_tolerance_02') | float }}"
+
+      dynamic_cold_tolerance_02:
+        unique_id: dynamic_cold_tolerance_02
+        value_template: "{{ states('input_number.cold_tolerance_02') | float }}"
+
+      adjusted_temperature_hot_01:
+        friendly_name: "Adjusted Temperature hot element 01"
+        value_template: >
+          {% set climate_temp = state_attr('climate.thermostat_01', 'temperature') | float(default=0) %}
+          {% set hot_tolerance_01 = states('sensor.dynamic_hot_tolerance_01') | float(default=0) %}
+          {{ climate_temp + hot_tolerance_01 }}
+
+      adjusted_temperature_cold_01:
+        friendly_name: "Adjusted Temperature cold element 01"
+        value_template: >
+          {% set climate_temp = state_attr('climate.thermostat_01', 'temperature') | float(default=0) %}
+          {% set cold_tolerance_01 = states('sensor.dynamic_cold_tolerance_01') | float(default=0) %}
+          {{ climate_temp - cold_tolerance_01 }}
+
+      adjusted_temperature_hot_02:
+        friendly_name: "Adjusted Temperature hot element 02"
+        value_template: >
+          {% set climate_temp = state_attr('climate.thermostat_02', 'temperature') | float(default=0) %}
+          {% set hot_tolerance_02 = states('sensor.dynamic_hot_tolerance_02') | float(default=0) %}
+          {{ climate_temp + hot_tolerance_02 }}
+
+      adjusted_temperature_cold_02:
+        friendly_name: "Adjusted Temperature cold element 02"
+        value_template: >
+          {% set climate_temp = state_attr('climate.thermostat_02', 'temperature') | float(default=0) %}
+          {% set cold_tolerance_02 = states('sensor.dynamic_cold_tolerance_02') | float(default=0) %}
+          {{ climate_temp - cold_tolerance_02 }}
+
+# The universal_thermostat climate platforms represent two thermostats that control the temperature
+# of a heating system. The thermostats use input number entities to define the hot and cold tolerance
+# thresholds, which are used to adjust the reported temperature to provide a more nuanced view of
+# the actual temperature conditions being maintained by the thermostats.
+climate:
+  - platform: universal_thermostat
+    name: "Thermostat 01"
+    unique_id: universal_thermostat_01
+    target_sensor: sensor.boiler_return_temperature
+    heater: 
+      - entity_id: switch.virtual_vw_element_01
+        inverted: false
+        keep_alive: 5
+        cold_tolerance: "{{ states('input_number.cold_tolerance_01') | float }}"  
+        hot_tolerance: "{{ states('input_number.hot_tolerance_01') | float }}"  
+    min_temp: 40
+    max_temp: 60
+    target_temp: 50  
+    initial_hvac_mode: "heat"
+    precision: 0.1
+
+  - platform: universal_thermostat
+    name: "Thermostat 02"
+    unique_id: universal_thermostat_02
+    target_sensor: sensor.boiler_return_temperature
+    heater: 
+      - entity_id: switch.virtual_vw_element_02
+        inverted: false
+        keep_alive: 5
+        cold_tolerance: "{{ states('input_number.cold_tolerance_02') | float }}"  
+        hot_tolerance: "{{ states('input_number.hot_tolerance_02') | float }}"  
+    min_temp: 40
+    max_temp: 60
+    target_temp: 50  
+    initial_hvac_mode: "heat"
+    precision: 0.1
