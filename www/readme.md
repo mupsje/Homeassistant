@@ -52,6 +52,61 @@ The Heat Curve Card is a custom card for Home Assistant that displays a heating 
 - `fontType`: Font type for the labels.
 - `fontSize`: Font size for the labels.
 
+
+# To allow the card to update the sensor value in Home Assistant, you need a long-lived access token. Follow these steps:
+
+ 1. **Generate a Long-Lived Access Token:**
+    - Go to your Home Assistant profile.
+    - Scroll down to "Long-Lived Access Tokens" and create a new token.
+    - Copy the token and keep it secure.
+
+ 2. **Update the JavaScript Code:**
+    - In your `heat-curve-cardbat.js`, ensure the `updateHomeAssistantSensor` function uses the correct URL and token:
+
+      ```javascript
+      updateHomeAssistantSensor(actualTemp) {
+          fetch('http://YOUR_HOME_ASSISTANT_URL:8123/api/states/sensor.actual_temperature', {
+              method: 'POST',
+              headers: {
+                  'Authorization': 'Bearer YOUR_LONG_LIVED_ACCESS_TOKEN',
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  state: actualTemp.toFixed(1),
+                  attributes: {
+                      unit_of_measurement: '°C',
+                      friendly_name: 'Actual Temperature'
+                  }
+              })
+          })
+          .then(response => response.json())
+          .then(data => console.log('Success:', data))
+          .catch((error) => console.error('Error:', error));
+      }
+      ```
+    - Replace `YOUR_HOME_ASSISTANT_URL` with your Home Assistant instance URL and `YOUR_LONG_LIVED_ACCESS_TOKEN` with the token you generated.
+
+
+## Updating the Actual Temperature Sensor
+
+To ensure the card updates the actual temperature as a sensor in Home Assistant, follow these steps:
+
+1. **Create the Sensor**: Add the following configuration to your `configuration.yaml`:
+
+   <<<
+   yaml
+   sensor:
+     - platform: template
+       sensors:
+         actual_temperature:
+           friendly_name: "Actual Temperature"
+           unit_of_measurement: '°C'
+           value_template: "{{ states('sensor.actual_temperature') }}"
+   <<<
+
+2. **Configure API Access**: Generate a long-lived access token in Home Assistant and update the JavaScript code in `heat-curve-cardbat.js` to use this token for API calls.
+
+
 ## Usage
 
 Once installed and configured, the Heat Curve Card will display a graph with the specified temperature data. The actual temperature will be updated as a sensor in Home Assistant, allowing you to use it in automations and other configurations.
