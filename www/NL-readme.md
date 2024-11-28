@@ -16,11 +16,11 @@ Volg de onderstaande stappen om de Heat Curve Card aan je Home Assistant toe te 
 
 1. **Download het script**:
 
-   Download het `heat-curve-cardbat.js` bestand uit deze repository.
+   Download het `heat-curve.js` bestand uit deze repository.
 
 2. **Plaats het bestand**:
 
-   Kopieer het gedownloade `heat-curve-cardbat.js` bestand naar de `www` map in je Home Assistant configuratie.
+   Kopieer het gedownloade `heat-curve.js` bestand naar de `www` map in je Home Assistant configuratie.
 
    Het pad zou er ongeveer zo uitzien:
 
@@ -36,7 +36,7 @@ Open je Home Assistant en ga naar **Instellingen** > **Dashboards** > **Bronnen*
 Voeg de volgende resource toe aan je Lovelace configuratie:
 
 ```
-url: /local/heat-curve-cardbat.js
+url: /local/heat-curve.js
 type: module
 ```
 
