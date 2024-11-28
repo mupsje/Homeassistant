@@ -95,29 +95,17 @@ class HeatCurveCard extends LitElement {
         this.updateHomeAssistantSensor(temperature);
     }
     updateHomeAssistantSensor(actualTemp) {
-        fetch('http://192.168.15.182:8123/api/states/sensor.actual_temperature', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIxMmY0ZjE5NTVkZmY0MzNiODBhNTY4ZjA3MjUwODEzOSIsImlhdCI6MTczMjcxODIwNywiZXhwIjoyMDQ4MDc4MjA3fQ.jdfRVX2L1G44xD3Lndwjr33OU2NVMSxNW97N7UfKvi0',
-                'Content-Type': 'application/json'
+        this.hass.callApi('POST', 'states/sensor.actual_temperature', {
+            state: actualTemp.toFixed(1),
+            attributes: {
+                unit_of_measurement: '°C',
+                friendly_name: 'Actual Temperature',
             },
-            body: JSON.stringify({
-                state: actualTemp.toFixed(1),
-                attributes: {
-                    unit_of_measurement: '°C',
-                    friendly_name: 'Actual Temperature'
-                }
-            })
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => console.log('Success:', data))
+        .then((data) => console.log('Success:', data))
         .catch((error) => console.error('Error:', error));
     }
+    
 
     render() {
         if (!this.hass || !this.config) {
