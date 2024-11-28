@@ -35,10 +35,10 @@ Open je Home Assistant en ga naar **Instellingen** > **Dashboards** > **Bronnen*
 
 Voeg de volgende resource toe aan je Lovelace configuratie:
 
->>>
+```
 url: /local/heat-curve-cardbat.js
 type: module
-<<<
+```
 
 ### Stap 3: Kaart toevoegen aan je dashboard
 
@@ -54,7 +54,7 @@ Klik op **Kaart toevoegen** en kies voor **Manueel**.
 
 Plak de volgende configuratie in het tekstveld:
 
->>>
+```
 type: "custom:heat-curve-card"
 entities:
   voetpunt: sensor.voetpunt
@@ -73,30 +73,14 @@ colors:
   extension: '#0000ff'
   grid: '#e0e0e0'
   axes: '#000000'
-<<<
+```
 
 **Let op**: Vervang de entiteiten onder `entities` door de juiste sensoren uit jouw Home Assistant configuratie.
 
-### Stap 4: Lange termijn toegangstoken instellen
+### Stap 4: Sensor
 
-Om de `actual_temp` waarde als sensor te kunnen gebruiken, moet je een lange termijn toegangstoken aanmaken:
+Om de `actual_temp` waarde als sensor te kunnen gebruiken, moet je hassio herstarten.
 
-1. **Genereer een toegangstoken**:
-
-- Ga naar je profiel in Home Assistant.
-- Scroll naar beneden naar **Lange termijn toegangstokens**.
-- Klik op **Maak token** en geef het een naam.
-- Kopieer het gegenereerde token.
-
-2. **Werk het script bij met je toegangstoken**:
-
-Open het `heat-curve-cardbat.js` bestand en zoek de regel met `'Authorization': 'Bearer YOUR_LONG_LIVED_ACCESS_TOKEN',`.
-
-Vervang `YOUR_LONG_LIVED_ACCESS_TOKEN` door je eigen toegangstoken:
-
->>>
-'Authorization': 'Bearer JOUW_ACCESS_TOKEN',
-<<<
 
 ### Stap 5: Home Assistant herstarten
 
