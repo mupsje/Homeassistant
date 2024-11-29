@@ -1,7 +1,15 @@
 # Heat Curve Card / Weersafhankelijke temperatuurkaart / Stooklijnkaart
 
+Dit project bevat een interactieve verwarmingscurve.
 
-Een aangepaste kaart voor Home Assistant die een verwarmingscurve weergeeft met de actuele temperatuurwaarden.
+## Verwarmingscurve
+
+Je kunt de verwarmingscurve bekijken door op de onderstaande link te klikken:
+
+[Bekijk de verwarmingscurve](./sources/curve.html)
+(Download de file en open hem in je explorer)
+
+Hieronder een aangepaste custom kaart voor Home Assistant die een verwarmingscurve weergeeft met de actuele temperatuurwaarden.
 
 ## Installatie
 
