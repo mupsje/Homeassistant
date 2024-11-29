@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Heat Curve Test</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #e9ecef;
+        margin: 0;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 18px; 
+        padding: 18px; 
+        background-color: #ffffff;
+        border-radius: 7px; 
+        box-shadow: 0 3.6px 7.2px rgba(0, 0, 0, 0.1); 
+        max-width: 720px; 
+        width: 100%;
+        margin-bottom: 18px; 
+    }
+
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4.5px; 
+    }
+
+    label {
+        font-weight: bold;
+        color: #333;
+    }
+
+    input, select {
+        padding: 9px; 
+        border: 1px solid #ddd;
+        border-radius: 3.6px; 
+        box-shadow: inset 0 0.9px 2.7px rgba(0, 0, 0, 0.1); 
+        transition: border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    canvas {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style></head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <label>Chart Scale:</label>
+            <input type="range" id="scaleSlider" min="1" max="3" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label>Voetpunt stooklijn:</label>
+            <input type="number" id="minTemp" value="30" min="25" max="95">
+        </div>
+        <div class="control-group">
+            <label>Eindpunt Stooklijn:</label>
+            <input type="number" id="maxTemp" value="85" min="25" max="95">
+        </div>
+        <div class="control-group">
+            <label>Actuele Buitentemperatuur:</label>
+            <input type="number" id="actualTemp" value="15" step="0.1" min="-20" max="25">
+        </div>
+        <div class="control-group">
+            <label>Actuele Flow Temperature:</label>
+            <input type="number" id="actualFlowTemp" value="45" step="0.1" min="25" max="95">
+        </div>
+        <div class="control-group">
+            <label>Label Positie:</label>
+            <select id="labelPosition">
+                <option value="right">Rechts</option>
+                <option value="left">Links</option>
+                <option value="top">Boven</option>
+                <option value="bottom">Onder</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Label Afstand:</label>
+            <input type="range" id="labelOffset" min="5" max="50" value="10">
+        </div>
+        <div class="control-group">
+            <label>Verticale Aanpassing:</label>
+            <input type="range" id="verticalOffset" min="-10" max="10" value="4" step="1">
+        </div>
+    </div>
+
+    <canvas id="heatCurve" width="500" height="400"></canvas>    
+
+    <script>
+        const canvas = document.getElementById('heatCurve');
+        const ctx = canvas.getContext('2d');
+        const minTempInput = document.getElementById('minTemp');
+        const maxTempInput = document.getElementById('maxTemp');
+        const actualTempInput = document.getElementById('actualTemp');
+        const actualFlowTempInput = document.getElementById('actualFlowTemp');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const labelPositionSelect = document.getElementById('labelPosition');
+        const labelOffsetSlider = document.getElementById('labelOffset');
+        const verticalOffsetSlider = document.getElementById('verticalOffset');
+
+        function updateCanvasSize() {
+            const scale = parseFloat(scaleSlider.value);
+            canvas.width = 400 * scale;
+            canvas.height = 300 * scale;
+            drawCurve();        }
+        
+        scaleSlider.value = 1.85; 
+        updateCanvasSize();
+
+        function drawGrid() {
+            const padding = 60;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+
+            // Vertical grid lines
+            const xValues = [25,20,15,10,5,0,-5,-10,-15,-20];
+            xValues.forEach((value, index) => {
+                const x = padding + (width - (index * width/9));
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, height + padding);
+            });
+
+            // Horizontal grid lines
+            const yValues = [25,30,35,40,45,50,55,60,65,70,75,80,85,90,95];
+            yValues.forEach((value, index) => {
+                const y = height + padding - (height * index/(yValues.length-1));
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width + padding, y);
+            });
+
+            ctx.stroke();
+        }
+
+        function drawAxes() {
+            const padding = 60;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+
+            // Axes lines
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height + padding);
+            ctx.lineTo(width + padding, height + padding);
+            ctx.stroke();
+
+            // X-axis title
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('Outdoor Temperature', width/2, height + padding + 35);
+
+            // Y-axis title (rotated and centered)
+            ctx.save();
+            ctx.translate(padding - 40, height/2 + padding);
+            ctx.rotate(-Math.PI/2);
+            // Reset text alignment
+            ctx.textAlign = 'center';
+            ctx.fillText('Flow Temperature in °C', 0, 0);
+            ctx.restore();
+
+            // X-axis labels
+            ctx.font = '12px Arial';
+            const xValues = [-20,-15,-10,-5,0,5,10,15,20,25];
+            xValues.forEach((value, index) => {
+                const x = padding + (width - (index * width/9));
+                ctx.fillText(`${value > 0 ? '+'+value : value}`, x-5, height + padding + 15); // Centered text position
+            });
+
+            // Y-axis labels
+            const yValues = [25,30,35,40,45,50,55,60,65,70,75,80,85,90,95];
+            yValues.forEach((value, index) => {
+                const y = height + padding - (height * index/(yValues.length-1));
+                ctx.fillText(value, padding - 25, y+5);
+            });
+        }
+
+        function drawLine() {
+            const padding = 60;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+            
+            const minTemp = parseFloat(minTempInput.value);
+            const maxTemp = parseFloat(maxTempInput.value);
+
+            // Find exact x-coordinates for +20°C and -10°C on our scale
+            const xValues = [-20,-15,-10,-5,0,5,10,15,20,25];
+            const voetpuntX = padding + (width - (xValues.indexOf(20) * width/9));
+            const eindpuntX = padding + (width - (xValues.indexOf(-10) * width/9));            
+
+            // Y positions based on actual temperature values (25-95 range)
+            const voetpuntY = padding + height - ((minTemp - 25) * height / 70);
+            const eindpuntY = padding + height - ((maxTemp - 25) * height / 70);
+
+            // Draw the line through the exact intersection points
+            ctx.beginPath();
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.moveTo(voetpuntX, voetpuntY);
+            ctx.lineTo(eindpuntX, eindpuntY);
+            ctx.stroke();
+
+            // Draw the points
+            ctx.beginPath();
+            ctx.fillStyle = '#ff0000';
+            ctx.arc(voetpuntX, voetpuntY, 5, 0, Math.PI * 2);
+            ctx.arc(eindpuntX, eindpuntY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Calculate actual temperature point and position
+            const actualTemp = parseFloat(actualTempInput.value);
+            const actualX = padding + width - ((actualTemp + 20) * width/45);
+
+            // Calculate Y position where green line intersects with red line
+            const slope = (eindpuntY - voetpuntY) / (eindpuntX - voetpuntX);
+            const actualY = voetpuntY + slope * (actualX - voetpuntX);
+
+            // Draw actual temperature vertical line
+            ctx.beginPath();
+            ctx.strokeStyle = 'green';
+            ctx.setLineDash([2, 2]);
+            ctx.moveTo(actualX, height + padding);
+            ctx.lineTo(actualX, actualY);
+            ctx.stroke();
+
+            // Draw intersection point at the heat curve
+            ctx.beginPath();
+            ctx.fillStyle = 'green';
+            ctx.arc(actualX, actualY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bereken de Y-waarde in temperatuur
+            const intersectTemp = 25 + (70 * (height + padding - actualY) / height);
+            // Teken de temperatuurwaarde
+            drawTemperatureLabel(actualX, actualY, intersectTemp);
+
+            // Actuele Flow Temperature
+            // Calculate actual flow temperature position and intersection
+            const actualFlowTemp = parseFloat(actualFlowTempInput.value);
+            const actualFlowY = padding + height - ((actualFlowTemp - 25) * height / 70);
+
+            // Draw horizontal flow temperature line
+            ctx.beginPath();
+            ctx.strokeStyle = 'purple';
+            ctx.setLineDash([2, 2]);
+            ctx.moveTo(padding, actualFlowY);
+            ctx.lineTo(width + padding, actualFlowY);
+            ctx.stroke();
+
+            // Calculate X position where purple line intersects with red line
+            const inverseSlope = (voetpuntX - eindpuntX) / (voetpuntY - eindpuntY);
+            const intersectX = voetpuntX + (actualFlowY - voetpuntY) * inverseSlope;
+
+            // Draw intersection point at the heat curve
+            ctx.beginPath();
+            ctx.fillStyle = 'purple';
+            ctx.arc(intersectX, actualFlowY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw blue dotted extension lines
+            ctx.beginPath();
+            ctx.strokeStyle = 'blue';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+
+            // Left extension from voetpunt
+            ctx.moveTo(voetpuntX, voetpuntY);
+            ctx.lineTo(padding, voetpuntY);
+
+            // Right extension from eindpunt
+            ctx.moveTo(eindpuntX, eindpuntY);
+            ctx.lineTo(width + padding, eindpuntY);
+
+            ctx.stroke();
+
+            // Reset dash setting for future drawings
+            ctx.setLineDash([]);
+        }
+
+        function getYforX(x, x1, y1, x2, y2) {
+            const slope = (y2 - y1) / (x2 - x1);
+            const padding = 40;
+            const width = canvas.width - padding * 2;
+            x = padding + (x * width / 100);
+            return y1 + slope * (x - x1);
+        }
+
+        function drawCurve() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawAxes();
+            drawLine();
+        }
+
+        function drawTemperatureLabel(x, y, temperature) {
+            const offset = parseInt(labelOffsetSlider.value);
+            const verticalOffset = parseInt(verticalOffsetSlider.value);
+            const position = labelPositionSelect.value;
+            
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'green';
+            ctx.textAlign = 'left';
+            
+            let labelX = x;
+            let labelY = y + verticalOffset;
+  
+            switch(position) {
+                case 'right':
+                    labelX += offset;
+                    break;
+                case 'left':
+                    labelX -= offset;
+                    ctx.textAlign = 'right';
+                    break;
+                case 'top':
+                    labelY -= offset;
+                    ctx.textAlign = 'center';
+                    break;
+                case 'bottom':
+                    labelY += offset + 12;
+                    ctx.textAlign = 'center';
+                    break;
+            }
+  
+            ctx.fillText(`${temperature.toFixed(1)}°C`, labelX, labelY);
+    
+            // Reset text alignment naar standaard
+            ctx.textAlign = 'left';
+        }
+
+        // Initial draw and update listeners
+        drawCurve();
+        minTempInput.addEventListener('input', drawCurve);
+        maxTempInput.addEventListener('input', drawCurve);
+        actualTempInput.addEventListener('input', drawCurve);
+        actualFlowTempInput.addEventListener('input', drawCurve);
+        scaleSlider.addEventListener('input', updateCanvasSize);
+        labelPositionSelect.addEventListener('change', drawCurve);
+        labelOffsetSlider.addEventListener('input', drawCurve);
+        verticalOffsetSlider.addEventListener('input', drawCurve);
+    </script>
+</body>
+</html>
+
+
