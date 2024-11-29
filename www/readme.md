@@ -1,6 +1,6 @@
 # Heat Curve Card for Homeassistant
 
-
+www/curve.html
 
 The Heat Curve Card is a custom card for Home Assistant that displays a heating curve with actual temperature values. It is built using the LitElement library and provides a visual representation of temperature data.
 
